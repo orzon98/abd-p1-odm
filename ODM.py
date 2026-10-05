@@ -159,18 +159,15 @@ class Model:
         modelo..
         """
         #TODO
-        loc_var = self._location_var
-        loc_field = self._location_field()
-
-        if '_id' not in self._data:
-        # Documento nuevo: se inserta entero
-            if loc_var and self._data.get(loc_var) and loc_field not in self._data:
-                self._data[loc_field] = getLocationPoint(self._data[loc_var])
-        result = self._db.insert_one(dict(self._data))
-        self._data['_id'] = result.inserted_id
-    # (rama de actualización: ver más abajo)
-        self._modified_vars.clear()
-        pass #No olvidar eliminar esta linea una vez implementado
+        if "_id" not in self._data:
+            # Documento nuevo: si hay dirección, guarda también su punto GeoJSON
+            if self._location_var and self._location_var in self._data:
+                direccion = self._data[self._location_var]
+                self._data[self._location_var + "_loc"] = getLocationPoint(direccion)
+            # insert_one añade el _id a self._data
+            self._db.insert_one(self._data)
+        else:
+            pass  # TODO (paso 5): actualizar solo los campos modificados
 
     def delete(self) -> None:
         """
