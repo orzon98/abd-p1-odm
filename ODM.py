@@ -94,6 +94,11 @@ class Model:
     _db: pymongo.collection.Collection
     _internal_vars: set[str] = frozenset(('_modified_vars', '_required_vars', '_admissible_vars', '_db', '_data', '_location_var'))
 
+    @classmethod
+    def _location_field(cls) -> str | None:
+        """Nombre del campo que guarda el punto GeoJSON (<campo>_loc)."""
+        return f"{cls._location_var}_loc" if cls._location_var else None
+
     def __init__(self, **kwargs: dict[str, str | dict | list]) -> None:
         """
         Inicializa el modelo con los valores proporcionados en kwargs
