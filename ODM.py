@@ -1,5 +1,5 @@
 __author__ = 'Pablo Ramos Criado'
-__students__ = 'Nombres_y_Apellidos'
+__students__ = 'David_SanMartin_Mateos_y_Daniel_Lopez_Vallejo'
 
 
 from geopy.geocoders import Nominatim
@@ -314,20 +314,33 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
         db_name : str
             nombre de la base de datos
     """
-    #TODO
-    # Inicializar base de datos
+    #Conexion a la base de datos
+    client = MongoClient(mongodb_uri, server_api=ServerApi('1'))
+    db = client[db_name]
 
+    # Leer el YAML
+    with open(definitions_path, encoding='utf-8') as f:
+        definitions = yaml.safe_load(f) or {}
     #TODO
     # Declarar tantas clases modelo colecciones existan en la base de datos
     # Leer el fichero de definiciones de modelos para obtener las colecciones,
     # indices y los atributos admitidos y requeridos para cada una de ellas.
     # Ejemplo de declaracion de modelo para colecion llamada MiModelo
-    scope["MiModelo"] = type("MiModelo", (Model,),{})
+    for model_name, spec in definitions.items():
+        spec = spec or {}
+        indexes = {}
+        for field in spec.get("indexes", []):
+            indexes[field] = 'asc'
+        for field in spec.get("unique_indexes", []):
+            indexes[field] = 'unique'
+        if spec.get('location_index'):
+            indexes[spec['location_index']] = 'geosphere'
     # La clase se declara en tiempo de ejecucion y queda en scope, que no tiene
     # por que ser el espacio de nombres global: las pruebas le pasan su propio
     # diccionario. Por eso se inicializa a traves de scope y no por su nombre,
     # que ahi todavia no existe.
-    scope["MiModelo"].init_class(db_collection=None, indexes=None, required_vars=None, admissible_vars=None)
+    scope[model_name] = type(model_name, (Model,), {})
+    scope[model_name].init_class(db_collection=db[model_name], indexes=indexes, required_vars=set(spec.get("required_vars", [])), admissible_vars=set(spec.get("admissible_vars", [])))
 
 if __name__ == '__main__':
     
@@ -336,7 +349,7 @@ if __name__ == '__main__':
     initApp()
 
     #Ejemplo
-    m = MiModelo(nombre="Pablo", apellido="Ramos", edad=18)
+    m = model_name(nombre="Pablo", apellido="Ramos", edad=18)
     m.save()
     m.nombre="Pedro"
     print(m.nombre)
