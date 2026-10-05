@@ -151,7 +151,7 @@ class Model:
         Si el modelo no existe en la base de datos, se crea un nuevo
         documento con los valores del modelo. En caso contrario, se
         actualiza el documento existente con los nuevos valores del
-        modelo.
+        modelo..
         """
         #TODO
         loc_var = self._location_var
