@@ -249,6 +249,16 @@ class Model:
         # Ojo con el índice geoespacial: save() guarda el GeoJSON Point en
         # <campo>_loc, luego el índice 2dsphere va sobre <campo>_loc, mientras
         # que _location_var debe guardar el nombre del campo base.
+        for field, tipo in (indexes or {}).items():
+            if tipo == "unique":
+                cls._db.create_index(field, unique=True)
+            elif tipo == "asc":
+                cls._db.create_index(field)
+            elif tipo == "geosphere":
+                cls._location_var = field
+                cls._db.create_index([(field + "_loc", pymongo.GEOSPHERE)])
+                cls._admissible_vars.add(field + "_loc")
+        
 
 
 class ModelCursor:
