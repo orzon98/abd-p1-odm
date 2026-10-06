@@ -111,6 +111,8 @@ class Model:
                 diccionario con los valores de las atributos del modelo
         """
         self._data: dict[str, str | dict | list] = {}
+        self._modified_vars = set()
+
         #TODO
         # Realizar las comprabociones y gestiones necesarias
         # antes de la asignacion.
@@ -121,6 +123,17 @@ class Model:
         # almacenadas en la base de datos en una solo atributo
         # Encapsular los datos en una sola variable facilita la 
         # gestion en metodos como save.
+
+        permitidos = self._required_vars | self._admissible_vars | {"_id"}
+        faltan = self._required_vars - kwargs.keys()
+
+        if faltan:
+            raise ValueError(f"Faltan atributos requeridos: {sorted(faltan)}")
+        sobran = kwargs.keys() - permitidos
+
+        if sobran:
+            raise ValueError(f"Atributos no permitidos: {sorted(sobran)}")
+
         self._data.update(kwargs)
 
     def __setattr__(self, name: str, value: str | dict) -> None:
@@ -136,6 +149,11 @@ class Model:
         # antes de la asignacion.
 
         # Asigna el valor value a la variable name
+
+        if name not in self._required_vars | self._admissible_vars:
+            raise ValueError(f"Atributo no admitido: {name}")
+
+        self._modified_vars.add(name)
         self._data[name] = value
 
     def __getattr__(self, name: str) -> Any:
@@ -167,14 +185,25 @@ class Model:
             # insert_one añade el _id a self._data
             self._db.insert_one(self._data)
         else:
-            pass  # TODO (paso 5): actualizar solo los campos modificados
+            # TODO (paso 5): actualizar solo los campos modificados
+            if not self._modified_vars:
+                return
+            cambios = {v: self._data[v] for v in self._modified_vars}
+
+            if self._location_var and self._location_var in cambios:
+                cambios[self._location_var + "_loc"] = getLocationPoint(cambios[self._location_var])
+                self._data[self._location_var + "_loc"] = cambios[self._location_var + "_loc"]
+            self._db.update_one({"_id": self._data["_id"]}, {"$set": cambios})
+        self._modified_vars.clear()
 
     def delete(self) -> None:
         """
         Elimina el modelo de la base de datos
         """
         #TODO
-        pass
+        if "_id" in self._data:
+            self._db.delete_one({"_id": self._data["_id"]})
+            del self._data["_id"]
     
     @classmethod
     def find(cls, filter: dict[str, str | dict]) -> Any:
@@ -194,7 +223,7 @@ class Model:
         """ 
         #TODO
         # cls es el puntero a la clase
-        pass #No olvidar eliminar esta linea una vez implementado
+        return ModelCursor(cls, cls._db.find(filter))
 
     @classmethod
     def aggregate(cls, pipeline: list[dict]) -> pymongo.command_cursor.CommandCursor:
@@ -307,7 +336,12 @@ class ModelCursor:
         Utilizar alive para comprobar si existen mas documentos.
         """
         #TODO
-        pass #No olvidar eliminar esta linea una vez implementado
+        while self.cursor.alive:
+            try:
+                doc = next(self.cursor)
+            except StopIteration:
+                return
+            yield self.model(**doc)
 
 
 def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://localhost:27017/", db_name="abd", scope=globals()) -> None:
