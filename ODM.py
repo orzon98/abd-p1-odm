@@ -49,6 +49,11 @@ def getLocationPoint(address: str) -> Point:
     # devolver un punto inventado ni None silenciosamente. Es lo que espera la
     # prueba test_get_location_point_timeout_failure.
 
+    if location is None:
+        raise ValueError(f"No se pudieron obtener coordenadas para '{address}'")
+
+    return Point((location.longitude, location.latitude))
+
 class Model:
     """ 
     Clase de modelo abstracta
@@ -285,12 +290,24 @@ class Model:
         cls._db = db_collection
         cls._required_vars = required_vars
         cls._admissible_vars = admissible_vars
+        cls._location_var = None
         # TODO
         # Recorrer indexes y crear cada índice segun su tipo: 'unique', 'asc'
         # y 'geosphere'. Comparar el tipo por igualdad, no con el operador 'in'.
         # Ojo con el índice geoespacial: save() guarda el GeoJSON Point en
         # <campo>_loc, luego el índice 2dsphere va sobre <campo>_loc, mientras
         # que _location_var debe guardar el nombre del campo base.
+        for field, kind in (indexes or {}).items():
+            if kind == 'unique':
+                cls._db.create_index([(field, pymongo.ASCENDING)], unique=True)
+            elif kind == 'asc':
+                cls._db.create_index([(field, pymongo.ASCENDING)])
+            elif kind == 'geosphere':
+                cls._location_var = field
+                cls._db.create_index([(f"{field}_loc", pymongo.GEOSPHERE)])
+            else:
+                raise ValueError(f"Tipo de índice desconocido: {kind}")
+
 
 
 class ModelCursor:
