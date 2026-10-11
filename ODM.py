@@ -1,3 +1,4 @@
+
 __author__ = 'Pablo Ramos Criado'
 __students__ = 'David_SanMartin_Mateos_y_Daniel_Lopez_Vallejo'
 
@@ -12,6 +13,7 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from bson.objectid import ObjectId
 import yaml
+from datetime import datetime
 
 def getLocationPoint(address: str) -> Point:
     """ 
@@ -393,49 +395,74 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
     for model_name, spec in definitions.items():
         spec = spec or {}
         indexes = {}
-        for field in spec.get("indexes", []):
+        for field in spec.get("regular_indexes", []):
             indexes[field] = 'asc'
         for field in spec.get("unique_indexes", []):
             indexes[field] = 'unique'
         if spec.get('location_index'):
             indexes[spec['location_index']] = 'geosphere'
-    # La clase se declara en tiempo de ejecucion y queda en scope, que no tiene
-    # por que ser el espacio de nombres global: las pruebas le pasan su propio
-    # diccionario. Por eso se inicializa a traves de scope y no por su nombre,
-    # que ahi todavia no existe.
-    scope[model_name] = type(model_name, (Model,), {})
-    scope[model_name].init_class(db_collection=db[model_name], indexes=indexes, required_vars=set(spec.get("required_vars", [])), admissible_vars=set(spec.get("admissible_vars", [])))
+        scope[model_name] = type(model_name, (Model,), {})
+        scope[model_name].init_class(
+            db_collection=db[model_name],
+            indexes=indexes,
+            required_vars=set(spec.get("required_vars", [])),
+            admissible_vars=set(spec.get("admissible_vars", [])),
+        )
 
 if __name__ == '__main__':
     
     # Inicializar base de datos y modelos con initApp
     #TODO
-    initApp()
-
-    #Ejemplo
-    m = model_name(nombre="Pablo", apellido="Ramos", edad=18)
-    m.save()
-    m.nombre="Pedro"
-    print(m.nombre)
+    scope = {}
+    initApp(db_name="abd", scope=scope)
+    Recinto, Artista, Evento, Asistente = (scope[n] for n in ("Recinto", "Artista", "Evento", "Asistente"))
+    for modelo in (Recinto, Artista, Evento, Asistente):
+        modelo._db.delete_many({})
 
     # Hacer pruebas para comprobar que funciona correctamente el modelo
     #TODO
     # Crear modelo
-
-    # Asignar nuevo valor a variable admitida del objeto 
-
+    r = Recinto(nombre="WiZink Center", direccion="Avenida de Felipe II, Madrid, España", aforo=15000,
+        zonas=[{"nombre": "Pista", "asientos": 5000}, {"nombre": "Grada", "asientos": 10000}])
+    r.save()
+    a = Artista(nombre="Rosalía", generos=["pop", "flamenco"], pais="España")
+    a.save()
+    e = Evento(titulo="Rosalía en Madrid", artistas=["Rosalía"], recinto="WiZink Center",
+               fecha=datetime(2026, 11, 20, 21, 0), precios={"Pista": 85, "Grada": 50})
+    e.save()
+    s = Asistente(nombre="Lucía", email="lucia@example.com", fecha_alta=datetime(2026, 1, 15),
+                  direccion="Calle de Alcalá, Madrid, España")
+    s.save()
     # Asignar nuevo valor a variable no admitida del objeto 
+    try:
+        r.color = "rojo"
+    except ValueError as e:
+        print("Error", e)
 
+    try:
+        Artista(nombre="Sin pais")
+    except ValueError as e:
+        print("Error", e)
     # Guardar
-
+    r.save()
+    print("Guardado")
     # Asignar nuevo valor a variable admitida del objeto
-
+    e.entradas_vendidas = 1200
+    e.save()
+    r.aforo = 16000
+    r.save()
     # Guardar
-
+    r.save()
     # Buscar nuevo documento con find
-
-    # Obtener primer documento
-
+    primero = next(iter(Recinto.find({"nombre": "WiZink Center"})))
+    print("Encontrado", primero.nombre, primero.aforo)
     # Modificar valor de variable admitida
-
+    tmp = Artista(nombre="Temporal", generos=["rock"], pais="España")
+    tmp.save()
+    tmp.delete()
+    print("Eliminado")
+    # Consulta geoespacial
+    cerca = Recinto._db.count_documents({"direccion_loc": {"$near": {"$geometry": r.direccion_loc, "$maxDistance": 1000}}})
+    print("Recintos cerca de WiZink Center:", cerca)
     # Guardar
+    primero.save()
