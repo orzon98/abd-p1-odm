@@ -1,0 +1,25 @@
+[{
+	"_id": {
+		"$oid": "6acb8f3f45879b2865b9ca3f"
+	},
+	"nombre": "WiZink Center",
+	"direccion": "Avenida de Felipe II, Madrid, España",
+	"aforo": 17000,
+	"zonas": {
+		"Pista": 5000,
+		"Grada": 10000
+	},
+	"servicios": [
+		"Bar",
+		"Restaurante",
+		"Aseos"
+	],
+	"direccion_loc": {
+		"type": "Point",
+		"coordinates": [
+			-3.674224,
+			40.423986
+		]
+	}
+}]
+

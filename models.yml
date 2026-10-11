@@ -58,13 +58,13 @@ Asistente:
   location_index: direccion
 
 Evento:
-  requiered_vars:
+  required_vars:
     - titulo
     - artistas
     - recinto
     - fecha
     - precios
-  addmissible_vars:
+  admissible_vars:
     - entradas_vendidas
   regular_indexes:
     - fecha

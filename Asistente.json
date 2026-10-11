@@ -1,0 +1,19 @@
+[{
+	"_id": {
+		"$oid": "6acb8f4045879b2865b9ca42"
+	},
+	"nombre": "Juan Pérez",
+	"email": "juannnn@gmail.com",
+	"fecha_alta": {
+		"$date": "2024-06-01T10:00:00Z"
+	},
+	"direccion": "Calle de Alcalá, Madrid, España",
+	"direccion_loc": {
+		"type": "Point",
+		"coordinates": [
+			-3.669295,
+			40.427777
+		]
+	}
+}]
+

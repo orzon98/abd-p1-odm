@@ -1,0 +1,19 @@
+[{
+	"_id": {
+		"$oid": "6acb8f3f45879b2865b9ca41"
+	},
+	"titulo": "Concierto de Coldplay",
+	"recinto": "WiZink Center",
+	"artistas": [
+		"Coldplay"
+	],
+	"fecha": {
+		"$date": "2024-06-15T20:00:00Z"
+	},
+	"precios": {
+		"Pista": 100,
+		"Grada": 50
+	},
+	"entradas_vendidas": 1200
+}]
+

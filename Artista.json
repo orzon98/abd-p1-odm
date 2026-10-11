@@ -1,0 +1,13 @@
+[{
+	"_id": {
+		"$oid": "6acb8f3f45879b2865b9ca40"
+	},
+	"nombre": "Coldplay",
+	"generos": [
+		"rock",
+		"pop"
+	],
+	"pais": "Reino Unido",
+	"anio_inicio": 1996
+}]
+
