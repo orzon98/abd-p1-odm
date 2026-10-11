@@ -132,6 +132,8 @@ class Model:
         # gestion en metodos como save.
 
         permitidos = self._required_vars | self._admissible_vars | {"_id"}
+        if self._location_field():
+            permitidos.add(self._location_field())
         faltan = self._required_vars - kwargs.keys()
 
         if faltan:
@@ -419,50 +421,68 @@ if __name__ == '__main__':
     for modelo in (Recinto, Artista, Evento, Asistente):
         modelo._db.delete_many({})
 
-    # Hacer pruebas para comprobar que funciona correctamente el modelo
-    #TODO
     # Crear modelo
-    r = Recinto(nombre="WiZink Center", direccion="Avenida de Felipe II, Madrid, España", aforo=15000,
-        zonas=[{"nombre": "Pista", "asientos": 5000}, {"nombre": "Grada", "asientos": 10000}])
-    r.save()
-    a = Artista(nombre="Rosalía", generos=["pop", "flamenco"], pais="España")
-    a.save()
-    e = Evento(titulo="Rosalía en Madrid", artistas=["Rosalía"], recinto="WiZink Center",
-               fecha=datetime(2026, 11, 20, 21, 0), precios={"Pista": 85, "Grada": 50})
-    e.save()
-    s = Asistente(nombre="Lucía", email="lucia@example.com", fecha_alta=datetime(2026, 1, 15),
-                  direccion="Calle de Alcalá, Madrid, España")
-    s.save()
-    # Asignar nuevo valor a variable no admitida del objeto 
+    recinto = Recinto(
+        nombre="WiZink Center",
+        direccion="Avenida de Felipe II, Madrid, España",
+        aforo=15000,
+        zonas={"Pista": 5000, "Grada": 10000},
+        servicios=["Bar", "Restaurante", "Aseos"],
+    )
+    artista = Artista(
+        nombre="Coldplay",
+        generos=["rock", "pop"],
+        pais="Reino Unido",
+        anio_inicio=1996,
+    )
+    evento = Evento(
+        titulo="Concierto de Coldplay",
+        recinto="WiZink Center",
+        artistas=["Coldplay"],
+        fecha=datetime(2024, 6, 15, 20, 0),
+        precios={"Pista": 100, "Grada": 50},
+    )
+    asistente = Asistente(
+        nombre="Juan Pérez",
+        email="juannnn@gmail.com",
+        fecha_alta=datetime(2024, 6, 1, 10, 0),
+        direccion="Calle de Alcalá, Madrid, España",
+    )
+
+    # Asignar nuevo valor a variable admitida del objeto
+    evento.entradas_vendidas = 1200
+
+    # Asignar nuevo valor a variable no admitida del objeto
     try:
-        r.color = "rojo"
+        recinto.color = "rojo"
     except ValueError as e:
-        print("Error", e)
+        print("Error:", e)
 
     try:
         Artista(nombre="Sin pais")
     except ValueError as e:
-        print("Error", e)
+        print("Error:", e)
+
     # Guardar
-    r.save()
-    print("Guardado")
+    for doc in (recinto, artista, evento, asistente):
+        doc.save()
+    print("Guardados los 4 modelos")
+
     # Asignar nuevo valor a variable admitida del objeto
-    e.entradas_vendidas = 1200
-    e.save()
-    r.aforo = 16000
-    r.save()
+    recinto.aforo = 16000
+
     # Guardar
-    r.save()
+    recinto.save()
+
     # Buscar nuevo documento con find
-    primero = next(iter(Recinto.find({"nombre": "WiZink Center"})))
-    print("Encontrado", primero.nombre, primero.aforo)
+    result = Recinto.find({"nombre": "WiZink Center"})
+
+    # Obtener primer documento
+    recinto_result = next(iter(result))
+
     # Modificar valor de variable admitida
-    tmp = Artista(nombre="Temporal", generos=["rock"], pais="España")
-    tmp.save()
-    tmp.delete()
-    print("Eliminado")
-    # Consulta geoespacial
-    cerca = Recinto._db.count_documents({"direccion_loc": {"$near": {"$geometry": r.direccion_loc, "$maxDistance": 1000}}})
-    print("Recintos cerca de WiZink Center:", cerca)
+    recinto_result.aforo = 17000
+
     # Guardar
-    primero.save()
+    recinto_result.save()
+    print("Aforo final:", Recinto._db.find_one({"nombre": "WiZink Center"})["aforo"])
